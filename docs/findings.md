@@ -1,6 +1,6 @@
 # IQs POC - measured findings
 
-Generated 2026-09-02 07:57 UTC by `scripts/09-report.sh` directly from `out/evidence/`.
+Generated 2026-09-02 08:10 UTC by `scripts/09-report.sh` directly from `out/evidence/`.
 
 Every statement below is backed by a file in `out/evidence/`. Where a claim could not be tested in this tenant, that is stated rather than assumed.
 
@@ -440,6 +440,46 @@ iqspoc-pe-search	iqspoc-search-lnoqy4pkotz5c.search.windows.net	10.30.2.10
     "location": "swedencentral",
     "name": "iqspoc-pe-search.nic.fa15ffda-8683-4dfc-99e1-8ec684bac903",
     "type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "location": "swedencentral",
+    "name": "stiqspoclnoqy4pkotz5c-525377bb-67b0-451d-bdf3-020025f36d0d",
+    "type": "Microsoft.EventGrid/systemTopics"
+  },
+  {
+    "location": "swedencentral",
+    "name": "iqspoc-nat-pip",
+    "type": "Microsoft.Network/publicIPAddresses"
+  },
+  {
+    "location": "swedencentral",
+    "name": "iqspoc-natgw",
+    "type": "Microsoft.Network/natGateways"
+  },
+  {
+    "location": "swedencentral",
+    "name": "iqspoc-vm-nic",
+    "type": "Microsoft.Network/networkInterfaces"
+  },
+  {
+    "location": "swedencentral",
+    "name": "iqspoc-client",
+    "type": "Microsoft.Compute/virtualMachines"
+  },
+  {
+    "location": "swedencentral",
+    "name": "iqspoc-client_OsDisk_1_2631a710009a468fbdf67dc59ee5df02",
+    "type": "Microsoft.Compute/disks"
+  },
+  {
+    "location": "swedencentral",
+    "name": "iqspoc-client/MDE.Linux",
+    "type": "Microsoft.Compute/virtualMachines/extensions"
+  },
+  {
+    "location": "global",
+    "name": "iqspoc-bing",
+    "type": "Microsoft.Bing/accounts"
   }
 ]
 ```
@@ -466,7 +506,7 @@ iqspoc-pe-search	iqspoc-search-lnoqy4pkotz5c.search.windows.net	10.30.2.10
   "search": {
   "disableLocalAuth": true,
   "encryptionWithCmk": {
-    "encryptionComplianceStatus": "Compliant",
+    "encryptionComplianceStatus": "NonCompliant",
     "enforcement": "Unspecified"
   }
 }

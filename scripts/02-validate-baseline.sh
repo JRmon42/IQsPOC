@@ -99,13 +99,37 @@ rows = json.load(open(sys.argv[1]))
 c = collections.Counter(r["location"] for r in rows)
 for loc, n in c.most_common():
     print(f"  {loc:<20} {n} resource(s)")
+
+# 'global' is not automatically benign. Private DNS zones are global and hold
+# no customer data, but a global resource that DOES process customer text is a
+# genuine residency exception and must be named rather than counted silently.
+BENIGN = ("microsoft.network/privatednszones",
+          "microsoft.network/privatednszones/virtualnetworklinks")
+notable = [r for r in rows
+           if r["location"] == "global" and r["type"].lower() not in BENIGN]
+if notable:
+    print("\n  Global resources that are NOT private DNS zones:")
+    for r in notable:
+        print(f"    - {r['name']}  ({r['type']})")
 PY
 OFF=$(python3 -c "
 import json,sys
 rows=json.load(open('${EVIDENCE_DIR}/c7-residency.json'))
 print(len([r for r in rows if r['location'] not in ('${LOCATION}','global')]))")
-[[ "$OFF" == "0" ]] && _pass "no resource sits outside ${LOCATION} (global = DNS zones, which hold no customer data)" \
+NOTABLE=$(python3 -c "
+import json
+B=('microsoft.network/privatednszones','microsoft.network/privatednszones/virtualnetworklinks')
+rows=json.load(open('${EVIDENCE_DIR}/c7-residency.json'))
+print(len([r for r in rows if r['location']=='global' and r['type'].lower() not in B]))")
+[[ "$OFF" == "0" ]] && _pass "no regional resource sits outside ${LOCATION}" \
                     || iq::warn "$OFF resource(s) outside ${LOCATION}"
+if [[ "$NOTABLE" != "0" ]]; then
+  iq::warn "${NOTABLE} 'global' resource(s) are NOT private DNS zones - listed above"
+  iq::info "Grounding with Bing is the expected one: it has no region at all,"
+  iq::info "so no EU-residency claim can be made about text sent to it (C11)."
+else
+  iq::info "all 'global' resources are private DNS zones, which hold no customer data"
+fi
 iq::info "CAVEAT: the model deployment SKU decides inference residency."
 iq::info "GlobalStandard may route worldwide; use DataZoneStandard for EU-only."
 az cognitiveservices account deployment list -g "$RG" -n "$FOUNDRY_NAME" \

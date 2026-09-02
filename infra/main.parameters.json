@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "swedencentral" },
+    "namePrefix": { "value": "iqspoc" },
+    "adminPrincipalId": { "value": "5ec5c2e7-f4e0-48f9-ad43-6960cf27b856" },
+    "vnetAddressPrefix": { "value": "10.30.0.0/16" },
+    "enablePrivateNetworking": { "value": true },
+    "modelName": { "value": "gpt-4.1-mini" },
+    "modelVersion": { "value": "2025-04-14" },
+    "modelCapacity": { "value": 10 },
+    "modelSkuName": { "value": "GlobalStandard" }
+  }
+}

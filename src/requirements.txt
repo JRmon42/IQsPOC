@@ -1,0 +1,13 @@
+# The POC scripts deliberately rely only on the Python standard library
+# (urllib, json, base64) plus the Azure CLI, so that they run on a locked-down
+# WSL image with no root access and no package installs.
+#
+# Nothing here is required for scripts/*.sh to work.
+#
+# These are optional and only needed if you want to rewrite the tests using the
+# Azure SDKs instead of raw REST:
+#
+# azure-identity>=1.17.0
+# azure-search-documents>=11.6.0b4
+# azure-ai-projects>=1.0.0b4
+# azure-monitor-query>=1.3.0

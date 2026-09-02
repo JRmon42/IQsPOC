@@ -1,0 +1,30 @@
+# Captured evidence and deployment outputs. These contain resource IDs, IP
+# addresses, tenant/subscription identifiers and log excerpts from a specific
+# run, so they are deliberately kept out of source control.
+out/
+
+# Scratch files written by the scripts
+.bingerr
+.faberr
+*.tmp
+
+# Never commit secrets. The Bing grounding connection uses an API key, so a
+# careless redirect of `az rest` output could otherwise land one here.
+*.key
+*.pem
+.env
+*.secret
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*~
+~$*

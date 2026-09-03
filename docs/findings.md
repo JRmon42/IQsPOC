@@ -1,6 +1,6 @@
 # IQs POC - measured findings
 
-Generated 2026-09-02 08:10 UTC by `scripts/09-report.sh` directly from `out/evidence/`.
+Generated 2026-09-03 13:06 UTC by `scripts/09-report.sh` directly from `out/evidence/`.
 
 Every statement below is backed by a file in `out/evidence/`. Where a claim could not be tested in this tenant, that is stated rather than assumed.
 
@@ -18,11 +18,12 @@ Every statement below is backed by a file in `out/evidence/`. Where a claim coul
 | C7 | Data stays in the selected geography | **Confirmed** | `c7-residency.json` |
 | C8 | Private Endpoint keeps traffic in the VNet | **Confirmed** | `c8-authenticated-from-inside.txt` |
 | C9 | Public network access can be fully blocked | **Confirmed** | `c9-authenticated-from-outside.txt` |
-| C10 | Agent egress can be VNet-injected (delegated subnet) | **Partly confirmed** | `c10-delegated-subnet.json` |
+| C10 | Agent egress can be VNet-injected, and an agent really runs there | **Confirmed** | `c10-agent-subnet.json`, `c10-agent-results.json` |
 | C11 | Web IQ cannot be isolated, pinned or audited | **Confirmed** | `c11-summary.txt` |
 | C12 | The whole stack can run keyless (Entra ID only) | **Confirmed** | `c12-keyless.json` |
+| C13 | An NSG on the injected subnet controls Foundry IQ but NOT Web IQ | **Confirmed** | `c13-verdict.json` |
 
-## The four findings that matter most for the ST meeting
+## The five findings that matter most for the ST meeting
 
 ### 1. Query text IS written to logs once diagnostics are enabled
 
@@ -229,6 +230,32 @@ Enable succeeded:
 ```
 
 **Action for ST.** Web grounding cannot be constrained by network controls, because none exist for it. If it must be prevented, it has to be blocked at the governance layer - Azure Policy on connection creation, and review of which projects are permitted to add a `GroundingWithBingSearch` connection.
+
+### 5. An NSG on the injected agent subnet controls Foundry IQ but NOT Web IQ
+
+This is the single most decision-relevant measurement in the POC, and it contradicts the intuition that VNet injection gives the customer a network lever over every tool an agent uses.
+
+An agent was genuinely injected into `snet-agent`: the subnet now carries a `serviceAssociationLink` named `legionservicelink`, which delegation alone never creates. Both a Foundry IQ agent (`azure_ai_search`) and a Web IQ agent (`bing_grounding`) then ran successfully from it.
+
+Three configurations were compared:
+
+| # | Configuration on `snet-agent` | Foundry IQ agent | Web IQ agent |
+|---|---|---|---|
+| 1 | Baseline, unrestricted egress | `completed` | `completed` |
+| 2 | `Deny * -> Internet` (Allow `AzureCloud`) | `completed` | **`completed`** |
+| 3 | `Deny * -> 10.30.2.10/32` (Search PE) | **`failed`** | `completed` |
+
+Run 3 is the control, and it is what makes run 2 interpretable. A serverless injected subnet has no NIC, so it is entirely reasonable to suspect that NSG rules are accepted by ARM and then never programmed. They are programmed: denying the Search private endpoint broke the Foundry IQ agent with `tool_user_error: search_access_error`.
+
+Given that the NSG demonstrably works, run 2 is decisive. Blocking **all** Internet egress from the agent subnet did not stop Grounding with Bing. The Bing call is therefore made service-side by Microsoft and never enters ST's network.
+
+Consequences for ST:
+
+* Foundry IQ retrieval **is** governable with NSGs, UDRs, forced tunnelling and a proxy, because that traffic really does traverse ST's subnet.
+* Web IQ **is not**. There is no packet for ST to intercept, so it cannot be proxied, inspected, or blocked by any firewall rule ST can write. Blocking `api.bing.microsoft.com` at ST's own egress accomplishes nothing.
+* This is also the honest answer to ST's proxy question: yes for Foundry IQ, no for Web IQ.
+
+Full diagrams and reproduction steps: `docs/agent-network-flows.md`. Reproduce with `./scripts/11-nsg-enforcement.sh`, which removes every rule it creates.
 
 ## Network evidence
 
@@ -548,9 +575,9 @@ A 401 from the Fabric resource provider - rather than a quota or policy error - 
 
 ## Honest limitations of this POC
 
-* **Work IQ was not tested.** The tenant carries only `AAD_PREMIUM_P2` with no M365 or Copilot licences and no M365 content to index. Statements about Work IQ in the briefing remain documentation-based.
-* **Fabric IQ was not tested** beyond the capacity attempt above.
-* **Agent VNet injection was configured but never exercised.** The delegated subnet exists and is correctly delegated to `Microsoft.App/environments`, but no agent was actually injected into it, so C10 is marked *partly* confirmed.
+* **Work IQ could not be tested, and the reason was measured rather than assumed.** Microsoft Graph replied `Tenant does not have a SPO license.` and the tenant carries only `AAD_PREMIUM_P2`, so there is no Microsoft 365 substrate to retrieve from. Full gap analysis and remediation: `docs/work-iq-requirements.md`.
+* **Fabric IQ could not be tested.** The Fabric data plane replied `UserNotLicensed`: no Fabric/Power BI tenant has been initialised, which is why the ARM capacity PUT returns an opaque 401. Full gap analysis and remediation: `docs/fabric-iq-requirements.md`.
+* **Agent VNet injection was exercised and is now confirmed.** A `serviceAssociationLink` (`legionservicelink`) proves the platform claimed `snet-agent`, and both a Foundry IQ agent and a Web IQ agent ran successfully from it. See `docs/agent-network-flows.md`.
 * **Model routing.** The deployment uses a `GlobalStandard` SKU, which may route inference worldwide. `DataZoneStandard` is the EU-residency option and is parameterised in the Bicep but was not exercised. This is worth flagging to ST, as it is an easy detail to get wrong.
 * The measurements reflect the service behaviour on the date above. Preview APIs in this area are moving quickly.
 

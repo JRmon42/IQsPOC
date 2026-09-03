@@ -34,7 +34,10 @@ the network control as the cause.
 | C7 | Data stays in the chosen geography | `02-validate-baseline.sh` | `c7-residency.json` | Confirmed |
 | C8 | Private Endpoint keeps traffic internal | `04`, `04b` | `c8-authenticated-from-inside.txt` | Confirmed |
 | C9 | Public access can be fully blocked | `04`, `04b` | `c9-authenticated-from-outside.txt` | Confirmed |
-| C10 | Agent egress can be VNet-injected | `04-network-flows.sh` | `c10-delegated-subnet.json` | Partly |
+| C10 | Agent egress can be VNet-injected, and an agent really runs there | `10-agent-flows.sh` | `c10-agent-subnet.json`, `c10-agent-results.json` | Confirmed |
+| C13 | An NSG on the injected subnet controls Foundry IQ but NOT Web IQ | `11-nsg-enforcement.sh` | `c13-verdict.json` | Confirmed |
+| G1 | Work IQ prerequisites absent in this tenant | `12-workiq-fabriciq-gaps.sh` | `gaps/sharepoint-root.txt` | Confirmed |
+| G2 | Fabric IQ prerequisites absent in this tenant | `12-workiq-fabriciq-gaps.sh` | `gaps/fabric-dataplane.txt` | Confirmed |
 | C11 | Web IQ cannot be isolated/pinned/audited | `07-web-iq-test.sh` | `c11-summary.txt` | Confirmed |
 | C12 | The stack can run keyless | `02-validate-baseline.sh` | `c12-keyless.json` | Confirmed |
 

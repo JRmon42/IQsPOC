@@ -63,8 +63,8 @@ see flow B.
 | A3 | App → Foundry model | Private Endpoint `10.30.2.5/.6/.7` | **Full** | no public A record exists at all |
 | A4 | App → Storage / Cosmos | PE `10.30.2.4`, `.8`, `.9` | **Full** | keyless, shared-key auth disabled |
 | B | **AI Search → model** | Microsoft backbone, *outbound from Search* | **Indirect** – requires a *shared private link* | initially **403**; fixed (see §3) |
-| C | Foundry/agent → Bing | public internet via NAT Gateway | **None** | resolves to a public IP; no PE exists |
-| D | Agent → customer APIs | delegated subnet `snet-agent` | **Full** – VNet injection | subnet delegated; injection not exercised |
+| C | Foundry/agent → Bing | **service-side, from Microsoft** – not from the customer VNet | **None** | denying *all* Internet egress on `snet-agent` did not stop it (§7a) |
+| D | Agent → AI Search / customer APIs | injected subnet `snet-agent` | **Full** – VNet injection, NSG provably enforced | `serviceAssociationLink` present; denying the Search PE broke the agent (§7a) |
 | E | Services → Log Analytics | Azure backbone | Partial – can use AMPLS | logging is off until enabled |
 | F | Operators → control plane | `management.azure.com`, public | RBAC / Conditional Access | not a data path |
 
@@ -197,12 +197,48 @@ Worth treating as a flow in its own right, because it moves query text:
 
 Stated plainly so the diagram is not over-read:
 
-* **Agent VNet injection (flow D)** — the subnet is correctly delegated to
-  `Microsoft.App/environments`, but no agent was injected, so the egress path
-  was never carried live traffic.
+* **AMPLS placeholder** — see below. Agent VNet injection *was* subsequently
+  exercised; see §7a.
 * **AMPLS** for Log Analytics private ingestion — not deployed.
-* **Work IQ** — no M365 licences in the tenant; its flows are documentation-based.
-* **Fabric IQ** — capacity creation returned 401 (Fabric tenant not initialised).
+* **Work IQ** — blocked in this tenant: Graph replied `Tenant does not have a
+  SPO license.` Gap analysis and remediation in `docs/work-iq-requirements.md`.
+* **Fabric IQ** — blocked in this tenant: the Fabric data plane replied
+  `UserNotLicensed`. Remediation in `docs/fabric-iq-requirements.md`.
 * **Model routing** — the deployment uses `GlobalStandard`, which may route
   inference outside the EU. `DataZoneStandard` is the residency-constrained
   option and is parameterised in the Bicep but untested.
+
+---
+
+## 7a. Update — agent injection was exercised after all
+
+Flows C and D above were revised once an agent was genuinely injected into
+`snet-agent`. The subnet now carries a `serviceAssociationLink`
+(`legionservicelink`), which subnet delegation alone never creates, and both a
+Foundry IQ agent and a Web IQ agent ran from it successfully.
+
+Testing NSG rules on that subnet produced a result that changed the conclusion:
+
+| Configuration on `snet-agent` | Foundry IQ agent | Web IQ agent |
+|---|---|---|
+| Baseline | `completed` | `completed` |
+| `Deny * -> Internet` | `completed` | **`completed`** |
+| `Deny * -> 10.30.2.10/32` (Search PE) | **`failed`** | `completed` |
+
+The third row is the control: it proves the NSG really is enforced against the
+NIC-less injected runtime. Given that, the second row proves the Bing call does
+**not** originate from the customer subnet — it is made service-side by
+Microsoft.
+
+So flow C was mis-drawn originally. Agent egress to Bing does **not** leave
+through the customer's NAT Gateway; `snet-agent` has no NAT Gateway and no
+route table attached at all. The NAT address `4.165.97.252` belongs to
+`snet-app`, where the test VM runs.
+
+**Consequence for ST:** Foundry IQ retrieval is controllable with customer
+network policy (NSG, UDR, forced tunnelling, proxy). Web IQ is not controllable
+at the network layer by any means, and must be governed by withholding the Bing
+connection and enforcing that with Azure Policy.
+
+Full diagrams: `docs/agent-network-flows.md`.
+Reproduce: `./scripts/10-agent-flows.sh` then `./scripts/11-nsg-enforcement.sh`.

@@ -44,6 +44,8 @@ usual assumption.
 
 ## 2. Flow A — Agent → Foundry IQ (grounded on Azure AI Search)
 
+![Agent to Foundry IQ](img/flow-foundry-iq.png)
+
 Measured run: `run_Kv6htVtMAKyjgWgeS5qAaX7P`, status `completed`, tool
 `azure_ai_search`, 1074 prompt / 157 completion tokens. The answer quoted a
 canary string (`IQPOCPROBE-DOC-ALPHA`) that exists **only** in the private
@@ -121,6 +123,8 @@ Controls ST holds on this flow:
 ---
 
 ## 3. Flow B — Agent → Web IQ (Grounding with Bing)
+
+![Agent to Web IQ](img/flow-web-iq.png)
 
 Measured run: `run_OCfq9N0mIoyym0lyPNKNuygS`, status `completed`, tool
 `bing_grounding`, 4204 prompt / 97 completion tokens, real citation of ST's

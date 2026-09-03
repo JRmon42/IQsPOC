@@ -193,6 +193,7 @@ scripts/
   11-nsg-enforcement.sh       C13 — NSG controls Foundry IQ but not Web IQ
   12-workiq-fabriciq-gaps.sh  G1,G2 — measure why Work IQ / Fabric IQ are blocked
   99-teardown.sh              delete the resource group
+  consolidate-briefing.sh     merge the regenerated .docx once Word releases it
 src/
   foundry_iq_test.py          index + knowledge base + agentic retrieval
   la_query.py                 Log Analytics REST client (az extension unavailable)
